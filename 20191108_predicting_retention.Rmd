@@ -1,0 +1,1180 @@
+---
+title: "Predicting Student Retention Using SIS and Survey Data"
+author: ["Brooks Applegate, Ph.D.", "Bo Klauth"]
+date: "November 13, 2019"
+output:
+  beamer_presentation:
+    colortheme: crane
+    fonttheme: structurebold
+    keep_tex: yes
+    slide_level: 2
+    theme: CambridgeUS
+    toc: yes
+  ioslides_presentation: default
+  powerpoint_presentation:
+    reference_doc: bo_style.pptx
+  slidy_presentation: default
+institute: Western Michigan University
+#bibliography: references_ret.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE,
+                      warning= FALSE)
+library(tidyverse)
+library(ggplot2)
+library(psych)
+library(dplyr)
+ds<-read_csv("all_scores4.csv")
+all_scores4<-read.csv("all_scores4.csv", head=T)
+
+```
+
+
+
+
+# Background
+
+## What is retention?
+
+### Definition
+- A percentage of first-time degree-seeking students who persist in their educational program at an institution
+- $Enr_{PreviousFall}/ Enr_{Current Fall}\times 100$
+- Use adjusted cohort
+
+IPEDS (Integrated Postsecondary Education Data System, 2017)
+
+## Theories related to student persistence/attrition
+
+- Spady's (1971) attrition model: grade, normative congruence, friendship suport, institutional committment,intellectual dev, and social integration 
+- Astin's (1977; 1985): student's involvement (social and academic)
+- Bean (1987): background; academic vars; environmental vars (finances, employment, transfer, family responsibilities);academic outcome and psy. outcomes.
+- Vincent Tinto's(1987, 1993, & 1994) interaction model: social and academic integration, interaction with college comm.+ individual goals, personality, program committment+ finances
+- ...
+
+
+## Variables Used in Predicting Retention
+
+- High school achievement variables: HSGPA, ACT/SAT
+- College achievement variables: fall GPA, spring GPA, acc. GPA
+- Demographic variables: gender, race, residence status, on-campus living arrangement
+- ...
+
+## Constructs used in predicting retention
+
+- Organizational commitment/institutional commitment
+- Social support
+- Links
+- Sacrifice
+- Embeddedness
+- Intention to stay
+- Academic integration
+- Financial strain
+- Social integration
+- Scholastic conscientiousness
+- Motivation to learn
+- Degree commitment
+- Collegiate stress
+
+## Survey used in predicting retention
+
+- In major higher ed journals, 60% of published research used survey  (Fosnacht, Sarraf, Howe, & Peck, 2017)
+- National Survey of Student Engagement (NSSE) (Indiana University)
+- College Persistence Questionnaire [CPQ] (Davidson, Beck, & Milligan, 2009)
+- CPQ-V2 (Davidson, Beck, & Grisaffe, 2015)
+- CPQ-V3 (adapted) (Pugh et al, 2018).
+- First-year experience
+- Ed. institutions: different instruments measure the same constructs
+
+## Problem Statement
+
+### Barriers of the use of professional survey
+1. Cost (NSSE, CPQ)
+2. Missing cases
+    - NSSE
+    - CPQ-V2
+3. Many surveys in place
+    - Course evaluation
+    - Student satisfacation
+    - Program improvement surveys
+
+### Availability of in-house survey
+- The Orietation Survey: implemented since 2014.
+- Administered to incoming students (First Time in Any College)
+- Survey data <--match--> SIS data
+
+# Research Purpose and Questions
+## Purpose
+
+To understand how incoming freshmen’s attitude as measured by a pre-enrollment survey affects retention.
+
+To build a model for predicting FTIAC students' second-year retention. 
+
+
+## Research Questions
+
+1. Do high school achievements and the latent variable influence first-semester GPA after controlling for domographic variables?
+2. Among high school and college achievements, domographic variables, and the latent trait variable, which predictors are significant for predicting second year retention for cohort 2014? 
+    - What is the accuracy rate for cohort 2014?
+    - What is the cross-validation accuracy rate perfomed on the other cohort data sets?
+3. If the cohorts 2014 and 2015 are combined to create one data set, a predictive model is created, will the accuracy rate improve for cohort 2016 or cohort 2017?  
+
+## Significance
+
+### Instrument development
+- Construct validation --> testing theory
+- Construct improvement
+- Or drop it to avoid fatique
+
+### Retention
+ Earlier ID + earlier intervention (Siedman, 2005)
+
+
+# Methods
+
+## Data
+
+### SIS
+
+- FTIAC (First Time in Any College)
+- Cohorts 2014 to 2017; 10,091 obs.
+- DVs: 
+    - Fall GPA
+    - 2nd-y retention status (0= not retained, 1=retained)
+        - Previous fall to fall current year (adjustement)
+        - See IPEDS
+- IVs: HSGPA, ACT/SAT, fall GPA, residency status, gender, race, college as first choice
+
+## Data (2)
+### Survey
+
+- Orientation Survey: same cohorts; 10,733 obs.
+- 21 items 
+- Five-point scale: SD(1), D(2), NDA(3), A(4), and SA(5)
+    
+
+```{r}
+six_items_stems<-read_csv("six_items_stems.csv")
+knitr::kable(six_items_stems[,1:2], caption = "Six Survey Items")
+```
+
+
+```{r out.width="85%", eval=FALSE}
+
+knitr::include_graphics("C:/Users/Dell/Google Drive/CLASSES/Conferences/AEA Conference 19/Presentation_Predicting_Retention/IOSlides_predicting_retention/items.png")
+
+```
+
+
+## Data Analysis (1)
+
+### Applications
+- SAS 9.4
+- R 3.6.1
+
+### Data Analysis Plan
+
+1. Missing data analysis: Survey data & SIS data
+2. Exploratory factor analysis (EFA) and confirmatory factor analysis (CFA)
+    - Why?
+3. Descriptive statistics
+4. Multiple linear regrssion (stepwise)
+    - DV = hsgpa; IVs = other variables ($\alpha=0.05$)
+    
+    - DV = retention status; IVs = other variables
+
+
+## Data Analysis (2)
+
+### Missingness on Survey Data
+
+```{r}
+missing_per<-read_csv("missing_percent.csv")
+names(missing_per)<-c("Cohort", "T.N.Obs.", "Obs with M","Percent")
+knitr::kable(missing_per, caption="Percentage of Observations with Missing Values")
+```
+
+Note: T.N.Obs = Total Number of Observations; M = missing values
+
+## Data Analysis (3)
+
+```{r}
+mcar_test<-read_csv("mcar_test_results_sas.csv")
+```
+
+### Does missingness matter? 
+- It depends on:
+    - Missingness mechanisms
+    - Statistical methods
+
+### Missing data analysis on survey data
+1. Missing completely at random (MCAR) test (Little, 1998)
+    - Was not MCAR ($\chi^2$ = `r mcar_test[1,2]`, $df=$ `r mcar_test[1,3]`, $p<0.001$)
+
+2. Missing at random (MAR) test
+    - => All items were MAR.
+
+3. Multiple imputation (MI)
+    - MCMC (Markov-Chain Monte Carlo)
+
+
+## Data Analysis (4)
+
+### Missingness on SIS (Student Information Systems) Data
+
+```{r}
+hs_mcartest<-read_csv("mcar_test_results-gpa_act.csv")
+```
+
+- Missingness percentages: HS GPA (`r round(100*25/10091, digits=2)`%) and ACT (`r round(100*85/10091, digits=2)`%)
+- Was MCAR ($\chi^2$ = `r hs_mcartest[1,2]`, $df=$ `r hs_mcartest[1,3]`, $p>0.5$)
+- Imputed using MCMC
+
+## 
+### Descriptive Statistics
+
+```{r}
+attach(all_scores4)
+all_scores4$cohort<-as.factor(all_scores4$cohort)
+Returned_sta<-ifelse(Y2Returned==1, "yes", "no")
+imp_1<-all_scores4 %>% 
+  filter(X_Imputation_==1)
+survey<-imp_1 %>% 
+    select(item1:item6)
+    #filter(cohort=="2014")
+  survey2<-reshape2::melt(survey) # making a univariate layout
+ # graph
+ggplot(survey2, aes(value, color=variable, fill=variable)) + 
+  facet_wrap(~variable, scales = 'free') +
+  geom_histogram(binwidth = 0.7)+ 
+  scale_color_manual(values=c("black", "black", "black", "black", "black", "black"), name="Item")+ 
+  scale_fill_manual(values=c("orange", "#ffd966", "#56B4E9", "#93c47d", "#6d9eeb", "#980000"), name="Item")+   theme_bw()
+  
+
+```
+
+## Descriptive Statistics
+
+### Survey-Item 1
+```{r}
+# Compute the frequency
+library(tidyverse)
+items_f<-read_csv("items_f.csv")
+Response<-rep(1:5, dim(items_f)[1]/5)
+new_items_f<-data.frame(items_f[,c(1,4,5,7)],Response)
+new_items_f$Response<-as.factor(new_items_f$Response)
+new_items_f$Table[1:5]=c("Item1")
+new_items_f$Table[6:10]=c("Item2")
+new_items_f$Table[11:15]=c("Item3")
+new_items_f$Table[16:20]=c("Item4")
+new_items_f$Table[20:25]=c("Item5")
+new_items_f$Table[26:30]=c("Item6")
+
+knitr::kable(new_items_f[c(1:5), c(5,2,3)], caption="Response Frequencies for Item 1", row.names = FALSE)
+
+```
+
+## Descriptive Statistics
+
+### Survey-Item 2
+```{r}
+knitr::kable(new_items_f[c(6:10), c(5,2,3)], caption="Response Frequencies for Item 2", row.names = FALSE)
+
+```
+
+## Descriptive Statistics
+
+### Survey-Item 3
+```{r}
+
+knitr::kable(new_items_f[c(11:15), c(5,2,3)], caption="Response Frequencies for Item 3", row.names = FALSE)
+
+```
+
+## Descriptive Statistics
+
+### Survey-Item 4
+```{r}
+
+knitr::kable(new_items_f[c(16:20), c(5,2,3)], caption="Response Frequencies for Item 4", row.names = FALSE)
+
+```
+
+## Descriptive Statistics
+
+### Survey-Item 5
+```{r}
+
+
+knitr::kable(new_items_f[c(21:25), c(5,2,3)], caption="Response Frequencies for Item 5", row.names = FALSE)
+
+```
+
+## Descriptive Statistics
+
+### Survey-Item 6
+```{r}
+
+
+knitr::kable(new_items_f[c(26:30), c(5,2,3)], caption="Response Frequencies for Item 6", row.names = FALSE)
+
+```
+
+## Descriptive Statistics 
+
+### Cognitive Outcomes
+
+```{r}
+desc_cont_sis<-read_csv("descriptves_gpa_act.csv")
+knitr::kable(desc_cont_sis[c(1:4),-c(1:2)], digits=2, 
+             caption = "Descriptive Statistics for high school GPA, ACT, fall and spring GPA")
+
+```
+
+N = 10091
+
+
+## Descriptive Statistics
+### Demographic Information
+
+```{r}
+desc_demog<-read_csv("descriptive_demo.csv")
+Whitep<-1-sum(desc_demog[3:10, 3])
+Percent=desc_demog$Mean*100
+demog2<-cbind(desc_demog, Percent)
+demog2$Variable[7]="International"
+demog2$Variable[11]="Female"
+demog2$Variable[9]="Multi-races"
+demog2$Variable[10]="White"
+demog2$Percent[10]=Whitep*100
+demog2$Variable[12]="Resident"
+demog2$Variable[13]="College as 1st choice"
+knitr::kable(demog2[-c(1, 3, 8,13), c(1,7)], digits=2, row.names = FALSE,
+             caption="Descriptive Statistics for Demographic Info")
+
+```
+
+
+N = 10091
+
+
+
+# Findings
+
+
+## E-CFA (1)
+
+### Item scales: Strongly Disagree (1),	Disagree (2)	Neither Disagree Nor Agree (3),	Agree	Strongly (4), and Agree (5)
+
+```{r}
+six_items_stems<-read_csv("six_items_stems.csv")
+knitr::kable(six_items_stems[,1:2], caption = "Items Included in E-CFA")
+```
+
+## E-CFA (2)
+
+- Comparing one factor solutions
+- Items 1 to 6 vs. Items 1 to 5
+- GET STRUCTURE PATTERN
+
+## E-CFA (3)
+
+### E-CFA performed on cohort 2014
+
+```{r}
+# 2 digits and rounding
+#library(pander)
+#panderOptions('digits', 2)
+#panderOptions('round', 2)
+#panderOptions('keep.trailing.zeros', TRUE)
+#pander(all_alpha)
+
+# FitValue2 and FitValue5
+fit14<-read_csv("fit14.csv")
+fit14_disp<-fit14 %>%
+  rename(
+    "Fit Indices"=FitIndex1,
+    "Model 1" = FitValue2,
+    "Model 2"= FitValue5
+  )
+ 
+knitr::kable(fit14_disp[c(11,17,19,21,22,23,34),c(2,4,7)], digits=3, caption = "Fit Indices for Cohort 2014 Data Set")
+
+```
+
+- Model 1 (with six items) has better fit indices.
+
+## E-CFA (4)
+
+### Coefficient Alpha (cohort 2014)
+
+```{r}
+
+# old alpha
+all_alpha<-read_csv("alpha.csv")
+alpha14<-all_alpha %>% 
+  rename(
+    Cohort="_NAME_",
+    "Alpha for Model 1" = raw_alpha,
+    "Alpha for Model 2" = raw_alpha1t5,
+    "St. Alpha for Model 1"= st_alpha,
+    "St. Alpha for Model 2"= st_alpha1t5
+  ) %>% 
+  select(Cohort, "Alpha for Model 1", "Alpha for Model 2") %>% 
+  filter(Cohort==2014)
+#knitr::kable(alpha14, digits=2, caption = "Coefficient Alpha for Model 1 and 2")
+
+
+
+#library(dplyr)
+# new alpha and omega
+alpha_omega<-read_csv("all_alpha_omega.csv")
+alpha_omega$Model[1:4]<-"Model 1 (six items)"
+alpha_omega$Model[5:8]<-"Model 1 (five items)"
+knitr::kable(alpha_omega[c(1,5), c(4, 1:2)], digits=2, 
+             caption="Alpha and Omega Coefficients for Models 1 and 2")
+
+
+```
+
+## E-CFA (5)
+
+### E-CFA performed on cohort 2015
+
+```{r}
+# FitValue2 and FitValue5
+fit15<-read_csv("fit15.csv")
+fit15_disp<-fit15 %>%
+  rename(
+    "Fit Indices"=FitIndex1,
+    "Six Items" = FitValue2,
+    "Five Items"= FitValue5
+  )
+
+knitr::kable(fit15_disp[c(11,17,19,21,22,23,34),c(2,4,7)], digits=3, caption = "Fit Indices for Cohort 2015 Data Set")
+```
+
+- Confirms cohort 2014 data's E-CFA.
+
+## E-CFA (6)
+
+### Coefficient Alpha (cohort 2015)
+
+```{r}
+# alpha for cohort 2015
+alpha15<-all_alpha %>% 
+  rename(
+    Cohort="_NAME_",
+    "Alpha for Model 1" = raw_alpha,
+    "Alpha for Model 2" = raw_alpha1t5,
+    "St. Alpha for Model 1"= st_alpha,
+    "St. Alpha for Model 2"= st_alpha1t5
+  ) %>% 
+  select(Cohort, "Alpha for Model 1", "Alpha for Model 2") %>% 
+  filter(Cohort==2015)
+#knitr::kable(alpha15, digits=2, caption = "Coefficient Alpha for Model 1 and 2")
+
+
+# new alpha and omega
+alpha_omega<-read_csv("all_alpha_omega.csv")
+alpha_omega$Model[1:4]<-"Model 1 (six items)"
+alpha_omega$Model[5:8]<-"Model 1 (five items)"
+knitr::kable(alpha_omega[c(2,6), c(4, 1:2)], digits=2, 
+             caption="Alpha and Omega Coefficients for Models 1 and 2")
+
+
+
+```
+
+## CFA
+
+### CFA on Cohort 2016 and 2017 Data Sets
+
+```{r}
+# FitValue2 and FitValue5
+fit16<-read_csv("fit16.csv")
+fit17<-read_csv("fit17.csv")
+# Combine two cohorts
+fit1617<-data.frame(fit16[,c(2,4)], fit17[,c(4)]) 
+fit1617_disp<-fit1617 %>% 
+  rename(
+     "Fit Indices"=FitIndex1,
+    "2016 Cohort" = FitValue2,
+    "2017 Cohort"= FitValue2.1
+  )
+# when kable makes a table from a data.frame,
+# then row.names=FALSE needs to supress row numbers.
+
+knitr::kable(fit1617_disp[c(11,17,19,21,22,23,34),c(1:3)], row.names=FALSE, digits=3, caption = "Fit Indices for Cohort 2016 and 2017 Data Sets")
+
+```
+
+## CFA (2)
+
+### Coefficient Alpha (Cohorts 2016 and 2017)
+
+```{r}
+# alpha for cohort 2016 and 2017
+alpha16_17<-all_alpha %>% 
+  rename(
+    Cohort="_NAME_",
+    "Alpha for Model 1" = raw_alpha,
+    "Alpha for Model 2" = raw_alpha1t5,
+    "St. Alpha for Model 1"= st_alpha,
+    "St. Alpha for Model 2"= st_alpha1t5
+  ) %>% 
+  select(Cohort, "Alpha for Model 1") %>% 
+  filter(Cohort==2016 | Cohort == 2017)
+#knitr::kable(alpha16_17, digits=2, caption = "Coefficient Alpha for Model 1")
+
+# new alpha and omega
+alpha_omega<-read_csv("all_alpha_omega.csv")
+alpha_omega$Model[1:4]<-"Model 1 (six items)"
+alpha_omega$Model[5:8]<-"Model 1 (five items)"
+knitr::kable(alpha_omega[c(3,7,4, 8), c(4,3, 1:2)], digits=2, 
+             caption="Alpha and Omega Coefficients for Models 1 and 2")
+
+
+```
+
+## CFA (3)
+
+### One Factor Solution Diagram
+
+- Will need to get factor scores for cohort 2017 
+- It was created and stored in Field library
+
+## CFA (4)
+
+### Item scales: Strongly Disagree (1),	Disagree (2)	Neither Disagree Nor Agree (3),	Agree	Strongly (4), and Agree (5)
+
+```{r}
+six_items_stems<-read_csv("six_items_stems.csv")
+knitr::kable(six_items_stems[,1:2], caption = "Items Included in E-CFA")
+```
+
+- Related to optimism in college
+- => Name it College Optimism (CO).
+
+## CFA (5)
+### Pearson Correlation
+
+```{r}
+# link to optimism in college
+# https://www.onlinecollegecourses.com/2012/06/21/why-optimism-matters-for-student-success-now-and-after-graduation-2/
+a<-imp_1 %>% 
+  select(hsgpa, act, fall_gpa, spring_gpa, F1_im1)
+#summary(a)
+#dcor<-cor(a)
+
+corr.tbl<-read_csv("corr_table.csv")
+corr.tbl.gr<-corr.tbl %>%
+    filter(cohort==8062) %>% 
+    select(Variable, act, fall_gpa, spring_gpa, F1_im1)
+#corr.tbl.gr<-as.numeric(unlist(corr.tbl.gr))
+#typeof(corr.tbl.gr)
+a<-data.frame(corr.tbl.gr[,1], round(corr.tbl.gr[2:5], digits = 2))
+#a[1,2]<-""
+a[2,2]<-""
+a[3,2]<-""
+a[4,2]<-""
+
+#a[2,3]<-""
+a[3,3]<-""
+a[4,3]<-""
+
+#a[3,4]<-""
+a[4,4]<-""
+a2<-a[c(1:4),]
+
+knitr::kable(a2, caption="Correlation between Cognitive Variables and College Optimism") 
+
+```
+
+
+## 
+
+### RQ1. Do high school achievements and the latent variable influence first-semester GPA after controlling for domographic variables?
+
+### Analysis details
+- Used multiple imputation of SIS dataset (5 ds)
+- Used multiple imputation of the construct (5 ds)
+- 1 cohort: 25 MLR rolled up into 1
+
+##
+A Coefficent Table for All Predictors of Fall GPA
+
+```{r}
+# coefficients for cohort 2014;
+coef<-read_csv("fall_gpa2014.csv")#change name
+# recoding values
+coef$Parm<-recode_factor(coef$Parm, hsgpa="HSGPA", act="ACT", dummyFemale="Female", MultiRaces="Multi-races", dummyResident = "Resident",Internat="International",  stem="STEM", dummy1stChoice="First-choice college")
+
+pat<-"<"
+Sign<-sub(pat, "", coef$`Probt`)
+Sign<-as.numeric(Sign)
+Sign<-ifelse(Sign<0.05, "*", "")
+Sign[1]<-"" # remove star for intercept
+Parameter<-paste(coef$Parm, Sign)
+coef<-data.frame(Parameter, coef,Sign)
+
+coef.select14<-coef %>%
+  rename(
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value", "Sign")
+
+knitr::kable(coef.select14, digits=3, caption="A Coeffient Table for Predictors of Fall GPA for Cohort 2014")
+
+
+#effects_fgpa<-read_csv("effect_on_fgpa_by_year.csv")
+
+```
+
+##
+A Coefficent Table for All Predictors of Fall GPA
+
+```{r}
+# coefficients for cohort 2015;
+coef<-read_csv("fall_gpa2015.csv")#change name
+
+# recoding values
+coef$Parm<-recode_factor(coef$Parm, hsgpa="HSGPA", act="ACT", dummyFemale="Female", MultiRaces="Multi-races", dummyResident = "Resident",Internat="International",  stem="STEM", dummy1stChoice="First-choice college")
+
+pat<-"<"
+Sign<-sub(pat, "", coef$`Probt`)
+Sign<-as.numeric(Sign)
+Sign<-ifelse(Sign<0.05, "*", "")
+Sign[1]<-"" # remove start for intercept
+Parameter<-paste(coef$Parm, Sign)
+coef<-data.frame(Parameter, coef,Sign)
+
+coef.select15<-coef %>%
+  rename(
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value", "Sign")
+
+knitr::kable(coef.select15, digits=3, caption="A Coeffient Table for Predictors of Fall GPA for Cohort 2015")
+
+#effects_fgpa<-read_csv("effect_on_fgpa_by_year.csv")
+
+```
+
+##
+A Coefficent Table for All Predictors of Fall GPA
+
+```{r}
+# coefficients for cohort 2016;
+coef<-read_csv("fall_gpa2016.csv")#change name
+# recoding values
+coef$Parm<-recode_factor(coef$Parm, hsgpa="HSGPA", act="ACT", dummyFemale="Female", MultiRaces="Multi-races", dummyResident = "Resident",Internat="International",  stem="STEM", dummy1stChoice="First-choice college")
+
+pat<-"<"
+Sign<-sub(pat, "", coef$`Probt`)
+Sign<-as.numeric(Sign)
+Sign<-ifelse(Sign<0.05, "*", "")
+Sign[1]<-"" # remove start for intercept
+Parameter<-paste(coef$Parm, Sign)
+coef<-data.frame(Parameter, coef,Sign)
+
+coef.select16<-coef %>%
+  rename(
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value", "Sign")
+
+knitr::kable(coef.select16, digits=3, caption="A Coeffient Table for Predictors of Fall GPA for Cohort 2016")
+
+
+#effects_fgpa<-read_csv("effect_on_fgpa_by_year.csv")
+
+```
+
+##
+A Coefficent Table for All Predictors of Fall GPA
+
+```{r}
+# coefficients for cohort 2017;
+coef<-read_csv("fall_gpa2017.csv")#change name
+# recoding values
+coef$Parm<-recode_factor(coef$Parm, hsgpa="HSGPA", act="ACT", dummyFemale="Female", MultiRaces="Multi-races", dummyResident = "Resident",Internat="International",  stem="STEM", dummy1stChoice="First-choice college")
+
+pat<-"<"
+Sign<-sub(pat, "", coef$`Probt`)
+Sign<-as.numeric(Sign)
+Sign<-ifelse(Sign<0.05, "*", "")
+Sign[1]<-"" # remove start for intercept
+Parameter<-paste(coef$Parm, Sign)
+coef<-data.frame(Parameter, coef,Sign)
+
+coef.select17<-coef %>%
+  rename(
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value", "Sign")
+
+knitr::kable(coef.select17, digits=3, caption="A Coeffient Table for Predictors of Fall GPA for Cohort 2017")
+
+
+#effects_fgpa<-read_csv("effect_on_fgpa_by_year.csv")
+
+```
+
+##
+Predictors and Their Significance Status
+
+```{r}
+predictors.sign<-data.frame(coef.select14, coef.select15, coef.select16, coef.select17)
+y<-trimws(sub("\\*", "", predictors.sign$Parameter))
+predictors.sign<-data.frame(y, predictors.sign)
+yy<-predictors.sign %>% 
+  select("y", "Sign", "Sign.1", "Sign.2", "Sign.3") %>% 
+  rename(
+    "Parameter"=y, 
+    c2014=Sign,
+   c2015="Sign.1",
+    c2016="Sign.2",
+    c2017="Sign.3"
+  )
+
+knitr::kable(yy[(-1),], row.names=FALSE, caption="Significant Predictors Across Cohorts 2014-2017")
+
+```
+
+## Answer RQ1
+- The latent trait variable (College Optimism) did not influence fall GPA, holding all the other variables constant. --> 2014-2017
+
+## 
+
+- NS Predictors out (stepwise regression)
+- The results...
+
+##
+### A Coefficient Table for Signficant Predictors
+
+
+```{r}
+# coeff for signficant predictors
+xyz<-read_csv("a_predictors1.csv")
+xyz2<-xyz %>%
+  rename(
+    Parameter="Parm",
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value")
+# recode values
+xyz2$Parameter<-recode_factor(xyz2$Parameter, hsgpa="HSGPA", dummyFemale="Female", MultiRaces="Multi-races", stem="STEM")
+
+# create table
+knitr::kable(xyz2, digits=2, caption="A Coefficient Table for Signficant Predictors of Fall GPA (Cohort 2014)")
+
+```
+
+##
+### A Coefficient Table for Signficant Predictors
+
+
+```{r}
+# coeff for signficant predictors
+xyz<-read_csv("a_predictors2.csv")
+xyz2<-xyz %>%
+  rename(
+    Parameter="Parm",
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value")
+# recode values
+xyz2$Parameter<-recode_factor(xyz2$Parameter, hsgpa="HSGPA", dummyFemale="Female", MultiRaces="Multi-races", stem="STEM")
+
+# create table
+knitr::kable(xyz2, digits=2, caption="A Coefficient Table for Signficant Predictors of Fall GPA (Cohort 2015)")
+
+```
+
+##
+### A Coefficient Table for Signficant Predictors
+
+
+```{r}
+# coeff for signficant predictors
+xyz<-read_csv("a_predictors3.csv")
+xyz2<-xyz %>%
+  rename(
+    Parameter="Parm",
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value")
+# recode values
+xyz2$Parameter<-recode_factor(xyz2$Parameter, hsgpa="HSGPA", dummyFemale="Female", MultiRaces="Multi-races", stem="STEM")
+
+# create table
+knitr::kable(xyz2, digits=2, caption="A Coefficient Table for Signficant Predictors of Fall GPA (Cohort 2016)")
+
+```
+
+- Female and Hispanic: NS
+
+##
+### A Coefficient Table for Signficant Predictors
+
+
+```{r}
+# coeff for signficant predictors
+xyz<-read_csv("a_predictors4.csv")
+xyz2<-xyz %>%
+  rename(
+    Parameter="Parm",
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value")
+# recode values
+xyz2$Parameter<-recode_factor(xyz2$Parameter, hsgpa="HSGPA", dummyFemale="Female", MultiRaces="Multi-races", stem="STEM")
+
+# create table
+knitr::kable(xyz2, digits=2, caption="A Coefficient Table for Signficant Predictors of Fall GPA (Cohort 2017)")
+
+```
+
+- Hispanic: NS
+- Asian(new): S
+
+## Answer RQ1
+- ACT did not explain the variation in fall GPA, holding all of the other variables constant.
+- Across all cohorts, HSGPA has an effect on fall GPA, holding other variable constant.
+
+## Interpretation of the Results
+### 2014
+Model
+$$GPA_{Fall}=-0.03 + 0.91(HSGPA)+0.1(Female)+(-0.33)(Black)+$$
+$$(-0.23)Hispanic+(-0.39)(Multiraces)+(-0.45)(STEM)$$
+
+- On average, for every 1 unit increase in HSGPA, there is a 0.91 units increase in fall GPA, holding any other variables constant.
+- Female > Male
+- Black, Hipsanic, or Multiraces students < White students 
+- STEM < non-STEM
+
+## 2. 
+
+2.1 Among high school and college achievements, domographic variables, and the latent trait variable, which predictors are significant for predicting second year retention for cohort 2014?
+
+## 
+```{r}
+# coefficients for cohort 2014--#RETENTION--all variables;
+coef<-read_csv("ret_all_vars14.csv")
+
+# recoding values
+coef$Parm<-recode_factor(coef$Parm, fall_gpa="Fall GPA", hsgpa="HSGPA", act="ACT", dummyFemale="Female", MultiRaces="Multi-races", dummyResident = "Resident",Internat="International",  stem="STEM", dummy1stChoice="First-choice college")
+
+pat<-"<"
+Sign<-sub(pat, "", coef$`Probt`)
+Sign<-as.numeric(Sign)
+Sign<-ifelse(Sign<0.05, "*", "")
+Sign[1]<-"" # remove star for intercept
+Parameter<-paste(coef$Parm, Sign)
+coef<-data.frame(Parameter, coef,Sign)
+
+coef.select14<-coef %>%
+  rename(
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value", "Sign")
+
+knitr::kable(coef.select14, digits=3, caption="A Coeffient Table for All Predictors of 2nd-Y Retention for Cohort 2014")
+
+
+```
+
+## The Latent Variable
+
+- F1 (College Optimism) = NS in the model
+
+## Significant Predictors of Retention for Cohort 2014
+
+
+```{r}
+# coefficients for cohort 2014--#RETENTION;
+coef<-read_csv("ret14.csv")
+
+# recoding values
+coef$Parm<-recode_factor(coef$Parm, fall_gpa="Fall GPA", hsgpa="HSGPA", act="ACT", dummyFemale="Female", MultiRaces="Multi-races", dummyResident = "Resident",Internat="International",  stem="STEM", dummy1stChoice="First-choice college")
+
+pat<-"<"
+Sign<-sub(pat, "", coef$`Probt`)
+Sign<-as.numeric(Sign)
+Sign<-ifelse(Sign<0.05, "*", "")
+Sign[1]<-"" # remove star for intercept
+Parameter<-paste(coef$Parm, Sign)
+coef<-data.frame(Parameter, coef,Sign)
+
+coef.select14<-coef %>%
+  rename(
+    t=tValue,
+    "p Value"=Probt
+  ) %>% 
+  select("Parameter", "Estimate","StdErr", "t", "p Value", "Sign")
+
+knitr::kable(coef.select14, digits=3, caption="A Coeffient Table for Significant Predictors of 2nd-Y Retention for Cohort 2014")
+
+```
+
+## What is the accuracy rate for each of the cohorts?
+###  Accuracy rate's definition
+
+```{r results=FALSE}
+library(MASS)
+# predicting model imputation 1, cohort 2014
+imp1.14<-all_scores4 %>% 
+  filter(X_Imputation_==1 & year==2014)
+# head(imp_1)
+#dim(imp1.14)
+
+# only included significant predictor
+
+log.fit.14<-glm(Y2Returned~ fall_gpa+ act + stem, data=imp1.14, family = binomial)
+
+coef14<-summary(log.fit.14)$coef
+
+
+# finding accuracy rate for training data
+# get predicted probability
+prob.log.fit<-predict(log.fit.14, data=imp1.14, type="response")
+#head(prob.log.fit) # see values
+# predicted probability
+prob14<-prob.log.fit
+# convert to status
+predict.status<-rep(0, dim(imp1.14)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+train14<-table(predict.status, imp1.14$Y2Returned)
+# accuracy rate
+
+train.accu<-(train14[1,1]+ train14[2,2])/sum(train14)
+
+```
+
+- $\hat{Pr}(y_{i} =1) >0.5$, then $\hat{y_i} = 1$ 
+- $\hat{Pr}(y_{i} =1) \le 0.5$, then $\hat{y_i} = 0$ 
+- If $\hat{y_{i}}=y_{i}$, then "correct", else "incorrect".
+
+### Accuracy rate
+- Cohort 2014: `r round(train.accu, digits=2)`
+
+
+```{r}
+
+# cohort 2015
+imp1.15<-all_scores4 %>% 
+  filter(X_Imputation_==1 & year==2015)
+#dim(imp1.15)
+# YOU MUST USE THE ARGUMENT "newdata"
+prob.log.fit<-predict(log.fit.14, newdata=imp1.15, type="response")
+#head(prob.log.fit) # see values
+# predicted probability
+prob15<-prob.log.fit
+# convert to status
+predict.status<-rep(0, dim(imp1.15)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+test.tbl<-table(predict.status, imp1.15$Y2Returned)
+# accuracy rate
+
+test.accu15<-(test.tbl[1,1]+ test.tbl[2,2])/sum(test.tbl)
+
+# cohort 2016
+
+imp1.16<-all_scores4 %>% 
+  filter(X_Imputation_==1 & year==2016)
+#dim(imp1.16)
+prob.log.fit<-predict(log.fit.14, newdata=imp1.16, type="response")
+#head(prob.log.fit) # see values
+# predicted probability
+prob16<-prob.log.fit
+# convert to status
+predict.status<-rep(0, dim(imp1.16)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+test.tbl<-table(predict.status, imp1.16$Y2Returned)
+# accuracy rate
+
+test.accu16<-(test.tbl[1,1]+ test.tbl[2,2])/sum(test.tbl)
+
+# cohort 2017
+
+imp1.17<-all_scores4 %>% 
+  filter(X_Imputation_==1 & year==2017)
+#dim(imp1.16)
+prob.log.fit<-predict(log.fit.14, newdata=imp1.17, type="response")
+#head(prob.log.fit) # see values
+# predicted probability
+prob17<-prob.log.fit
+# convert to status
+predict.status<-rep(0, dim(imp1.17)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+test.tbl<-table(predict.status, imp1.17$Y2Returned)
+# accuracy rate
+
+test.accu17<-(test.tbl[1,1]+ test.tbl[2,2])/sum(test.tbl)
+
+
+```
+
+- Cohort 2015: `r round(test.accu15, digits=2)`
+- Cohort 2016: `r round(test.accu16, digits=2)`
+- Cohort 2017: `r round(test.accu17, digits=2)`
+
+
+## Graph
+
+
+```{r}
+#2014
+
+hist(prob14[imp1.14$Y2Returned == 1], xlim=c(0,1), xlab="Predicted Probability", ylab="Frequency", col="blue", border=F, main = "Predicted Probability and Retention Status for Cohort 2014")
+hist(prob14[imp1.14$Y2Returned == 0], add=T, col=scales::alpha('green',0.6), border = F)
+abline(v = 0.5, lty = 5) #Logistic decision boudnary
+legend('topleft', title="Legend",c("Returned", "Not returned"), lty=c(1,1), lwd=c(3,3), col=c("blue", "green"))
+
+
+
+```
+
+
+## 3. 
+### If the dataset including cohorts 2014 and 2015 are used as a training dataset, what is the accuracy rate on the training dataset and cochort 2016 and 2017 datasets?
+
+```{r results=FALSE}
+# creating train data including two cohorts 2014 and 2015
+
+imp1.1415<-all_scores4 %>% 
+  filter(X_Imputation_==1 & (year==2014|year==2015))
+#dim(imp1.1415)
+# creating a test data set with cohorts 2016 and 2017
+
+imp1.1617<-all_scores4 %>% 
+  filter(X_Imputation_==1 & (year==2016|year==2017))
+#dim(imp1.1617)
+
+attach(imp1.1415)
+log.fit.1415<-glm(Y2Returned~ fall_gpa+ hsgpa + act + F1_im1 + dummy1stChoice + dummyfemale + Asian + Black + Hispanic + MultiRaces + dummyResident + stem, data=imp1.1415, family = binomial) %>% stepAIC(trace=TRUE)
+# AIC: 4248.3
+coef1415<-summary(log.fit.1415)$coef
+
+
+
+```
+
+```{r}
+
+knitr::kable(coef1415, digits=2, caption = "Coefficients (cohorts 2014 and 2015 combined")
+
+```
+
+AIC: 4248.3
+
+##
+### Model with only Signficant Predictors
+
+```{r results=FALSE}
+log.fit.1415<-glm(Y2Returned~ fall_gpa+ F1_im1 + Asian + Hispanic + stem, data=imp1.1415, family = binomial) %>% stepAIC(trace=TRUE)
+# AIC: 4248.6
+coef1415<-summary(log.fit.1415)$coef
+
+```
+
+
+```{r}
+
+knitr::kable(coef1415, digits=2, caption = "Coefficients (cohorts 2014 and 2015 combined")
+
+```
+
+AIC: 4248.6
+
+##
+### Accuracy rate
+
+```{r}
+prob.log.figt1415<-predict(log.fit.1415, imp1.1415)
+
+#head(prob.log.fit) # see values
+# convert to status
+predict.status<-rep(0, dim(imp1.1415)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+train1415<-table(predict.status, imp1.1415$Y2Returned)
+train1415.accu<-(train1415[1,1]+train1415[2,2])/sum(train1415)
+
+# cohort 2016
+prob.log.figt1415<-predict(log.fit.1415, newdata=imp1.15)
+predict.status<-rep(0, dim(imp1.16)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+tbl.16<-table(predict.status, imp1.16$Y2Returned)
+tbl.16.accu<-(tbl.16[1,1]+tbl.16[2,2])/sum(tbl.16)
+
+# cohort 2017
+prob.log.figt1415<-predict(log.fit.1415, newdata=imp1.17)
+predict.status<-rep(0, dim(imp1.17)[1])
+predict.status[prob.log.fit>0.5]=1
+# make confusion table
+tbl.17<-table(predict.status, imp1.17$Y2Returned)
+tbl.17.accu<-(tbl.17[1,1]+tbl.17[2,2])/sum(tbl.17)
+
+
+```
+
+- Combined 2014 and 2015: `r round(train1415.accu, digits=2)`
+- cohort 16: `r round(tbl.16.accu, digits=2)`
+- cohort 17: `r round(tbl.17.accu, digits=2)`
+
+# Discussion
+
+## Survey
+
+- The construct: not related to cognitive achievement or retention
+    - n items = 6 --> low reliability (see alpha and omega)
+- Too early to measure (esp. retention) 
+- Friendship and other things: 8 weeks or later. 
+- Use one cohort to predict another cohort. 
+- Why not combined? 
+
+
+# Limitations
+
+## Limited variables 
+
+- SES
+- First gen
+- Dormitory status
+
+## Point 1
+
+## Point 2
+
+# Discussion on Methodology
+
+## EFA vs. E-CFA
+
+### Disadvantages of EFA? 
+
+
+- EFA yielded salient two or three factors across cohorts
+- Cronbach's alpha > 0.7
+- => **But may suffer from bad fit indices**
+
+### Advantages of E-CFA
+- Spots non-significant items
+- Enables fit index comparison
+- => **Needs researcher's item selection**
